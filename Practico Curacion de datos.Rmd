@@ -1,0 +1,270 @@
+---
+title: "Practico 2"
+output: html_document
+
+---
+
+Ejercicio: Mida el tiempo en una version vectorizada.
+
+```{r}
+n=10
+m=10
+v1 <- rnorm(n)
+v2 <- rnorm(m)
+
+system.time(
+for (i in 1:n) {
+for (j in 1:m) {
+  v3[i] <- v1[i] + 10*sin(0.75*pi)
+
+}
+}
+)
+```
+
+
+## Practico 1: Entregar un Rmd donde se encuentren todos los vuelos que:
+
+- Que arribaron con un retraso de mas de dos horas.
+- Volaron hacia Houston (IAH o HOU)
+- Fueron operados por United, American o Delta.
+- Salieron en Verano (Julio, Agosto y Septiembre)
+- Arrivaron mas de dos horas tarde, pero salieron bien.
+- Salieron entre medianoche y las 6 am.
+
+
+```{r}
+retraso = flights[flights$dep_delay > 120, ]
+
+houston = flights[flights$dest == 'IAH' | flights$dest == 'HOU',]
+
+operador = flights[flights$carrier == 'US'| flights$carrier == 'AA'| flights$carrier == 'DL' ,]
+
+verano = flights[flights$month==7 | flights$month==8 | flights$month==9,]
+
+bien_mal = flights[flights$dep_delay <= 0 & flights$arr_delay > 120,]
+#is.na(bien_mal$year) <- 1
+bien_mal1 = bien_mal[!is.na(bien_mal$year),]
+bien_mal1
+
+
+
+salieron = flights[flights$dep_time > 0 & flights$dep_time < 600,]
+salieron
+```
+
+
+### Ejercicios.
+
+
+Los valores correctos estan en la diagonal de la matriz, 98% de precision para unas pocas lineas de R!
+
+
++ Mejore el rendimiento utilizando una normalizacion con z-scores provista por la funcion scale() de R.
+Ver cómo cambian los resultados, ver si mejora o no.
+
+```{r}
+
+data_scale <- as.data.frame(lapply(data[2:31], scale))
+```
+
+```{r}
+data_entrenamiento <- data_scale[1:469, ]
+data_prueba  <- data_scale[470:569, ] 
+```
+
+```{r}
+data_entrenamiento_labels <- data[1:469, 1]
+data_prueba_labels  <- data[470:569, 1]
+```
+
+```{r}
+library(class)
+data_prueba_pred <- knn(train=data_entrenamiento,test=data_prueba,
+                        cl=data_entrenamiento_labels, k=21)
+```
+
+```{r}
+library(gmodels)
+CrossTable(x=data_prueba_labels, y=data_prueba_pred, prop.chisq = FALSE)
+```
+
+Los resultados obtenidos no se vieron modificados. 
+Obtenemos lo mismo que cuando aplicamos el método maxmin para modificar los datos.
+
+
+
+
++ Pruebe algunos valores alternativos de k=1, 5,  11, 15, 21 y seleccione el mejor valor de k.
+
+
+## Probamos con k=1
+data_test_pred_1 <- knn(train=data_train, test=data_test, cl=data_train_labels, k=1)
+
+CrossTable(x=data_test_labels, y=data_test_pred_1, prop.chisq = FALSE)
+
+Empeoró el resultado obtenido
+
+```{r}
+data_test_pred_11 <- knn(train=data_train, test=data_test, cl=data_train_labels, k=11)
+
+CrossTable(x=data_test_labels, y=data_test_pred_11, prop.chisq = FALSE)
+```
+Mejoró la predicción con un k=11, ya que si bien la predicción es errónea en 2 casos al igual que cuando se realizaba con un k=21, ahora tenemos un caso menos en el que se predecía que era Benigno el tumor, pero en realidar era maligno. Es decir, podemos llegar a salvarle la vida a 1 persona más.
+La contra es que ahora, a una de las personas le voy a decir que su tumor es maligno cuando en realidad es benigno, y se va a tener que hacer todos los tratamientos sin sentido.
+Con k=11 es la mejor predicción que se puede obtener.
+
+```{r}
+data_test_pred_15 <- knn(train=data_train, test=data_test, cl=data_train_labels, k=15)
+
+CrossTable(x=data_test_labels, y=data_test_pred_15, prop.chisq = FALSE)
+```
+Obtengo el mismo resultado que con un k=21
+
+
+
+
+
++ mientras termina su merecido cafe verifique si el resultado cambia utilizando paciente elegidos aleatoriamente para el conjunto de validacion.
+Porque habiamos hecho una división muy subjetiva. Ahora elegimos aleatoriamente (ver la clase de ayer) 
+
+```{r}
+library(dplyr)
+data_entrenamiento <- data_n[sample(nrow(data_n), 469), ]
+data_prueba <- anti_join(data_n, data_entrenamiento) 
+
+```
+
+
+```{r}
+```{r}
+data_prueba_pred <- knn(train=data_entrenamiento,test=data_prueba,
+                        cl=data_entrenamiento_labels, k=21)
+
+CrossTable(x=data_prueba_labels, y=data_prueba_pred, prop.chisq = FALSE)
+```
+
+Empeora la predicción cuando hago una selección al azar de mi muestra de entrenamiento y de mi muestra de prueba.
+
+
+
+
+-------------------------------------------------------------------------
+
+## Practico 2: Entregar un Rmd donde se:
+
+- Elija un dataset clasificado de su preferencia y area (domain expertise), aplique un metodo de clustering y/o mixtura de Gaussianas en el mismo. 
+Puede ser alguno de los que hemos visto. Aplicar un método de clustering, cambiando el número de cúmulos. 
+
+- Investigue los resultados en el meta parametro $K$ numero de cumulos e investigue posibles procesos de seleccion del mismo.
+
+- Elabore un resumen, y selecione un mejor valor segun el/los criterios aplicados, discuta el significado de los cumulos
+encontrados. 
+
+- Comente la influencia de la normalizacion de los datos en los resultados del clustering.
+
+
+
+
+
+Al dataset lo obtuvimos de https://www.openml.org/d/54 
+
+The purpose is to classify a given silhouette as one of four types of vehicle, using a set of features extracted from the silhouette. The vehicle may be viewed from one of many different angles
+
+
+```{r cars}
+autos <- read.csv(file = "C:/Users/Usuario/Desktop/FACULTAD/Diplomatura FAMAF/Materia 2 - Curacion de datos/Practico/dataset_54_vehicle.csv")
+
+```
+
+
+
+
+
+1) UTILIZAMOS EL MÉTODO KNN (vecinos cercanos)
+
+```{r}
+normalize <- function(x) {
+  return ((x-min(x))/(max(x)-min(x)))
+}
+
+autos_n <- as.data.frame(lapply(autos[,1:18], normalize))
+
+```
+
+
+PROBLEMA <- el KNN sólo funciona hasta con 499 observaciones
+
+Elegimos el K
+```{r}
+
+entrenamiento <- autos_n[1:500,]
+prueba <- autos_n[501:846, ]
+etiqueta_entrenamiento <- autos[1:500, 19 ]
+etiqueta_prueba <- autos[501:846, 19]
+
+
+sqrt(nrow(entrenamiento))
+```
+
+```{r}
+
+library(class)
+prediccion_prueba <- knn(train=entrenamiento, test=prueba, cl= etiqueta_entrenamiento, k=13)
+
+library(gmodels)
+CrossTable(x=etiqueta_prueba, y=prediccion_prueba, prop.chisq = FALSE)
+
+```
+
+
+```{r}
+
+prop.table(table(prediccion_prueba, etiqueta_prueba))
+```
+
+
+
+
+
+2) UTILIZAMOS EL ALGORITMO EM (EXPECTACIÓN-MAXIMIZACIÓN)
+
+
+```{r}
+library(mclust)
+
+initialk <- mclust::hc(data = autos, modelName = "EII")
+initialk <- mclust::hclass(initialk, 4)
+```
+
+```{r}
+mcl.model <- Mclust(autos[, 1:4], 4)
+
+plot(mcl.model, what = "classification", main = "Mclust Classification")
+```
+
+
+
+
+3) UTILIZAMOS EL MÉTODO DE COMPONENTES PRINCIPALES (PCA)
+
+Voy a ver cuáles son los atributos más importantes
+
+
+```{r}
+
+log_autos <- log(autos, 1:18])  ## elimino la columna de SPecies
+tipos <- autos[, 19]
+
+ 
+# apply PCA - scale. = TRUE is highly 
+# advisable, but default is FALSE. 
+autos_pca <- prcomp(autos, center = TRUE, scale. = TRUE) 
+# print method
+print(autos_pca)
+```
+```{r}
+
+```
+```
+
